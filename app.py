@@ -280,14 +280,32 @@ def appeal():
     to the person on the other end. It's the only thing standing between a
     wrong accusation and nothing at all.
     """
-    payload = request.get_json(silent=True) or {}
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        payload = {}
+    content_id = payload.get("content_id")
+    reasoning = payload.get("reasoning")
 
-    # TODO: delete this and build the route.
+    if not isinstance(content_id, str) or not content_id.strip():
+        return _reject("unknown", "invalid_content_id",
+                       "content_id is required and must be a non-empty string.", 400)
+    if not isinstance(reasoning, str) or not reasoning.strip():
+        return _reject("unknown", "invalid_reasoning",
+                       "reasoning is required and must be a non-empty string.", 400)
+
+    # Only decisions can be appealed; a rejection has no content_id.
+    decisions = [e for e in audit.entries_for(content_id) if e.get("event") is None]
+    if not decisions:
+        return _reject("unknown", "unknown_content_id",
+                       "No submission found with that content_id.", 404)
+
+    audit.log_appeal(content_id=content_id, creator_id=decisions[0]["creator_id"],
+                     reasoning=reasoning)
     return jsonify({
-        "error": "not_implemented",
-        "message": "POST /appeal isn't built yet — see the TODO in app.py.",
-        "you_sent": payload,
-    }), 501
+        "content_id": content_id,
+        "status": "under_review",
+        "message": "Thanks. Your appeal has been recorded and this item is now under review.",
+    })
 
 
 # ── Already works ─────────────────────────────────────────────────────────────
