@@ -36,9 +36,15 @@
 
 ## What This Does
 
-<!-- The path a submission takes, from arriving to the label a reader sees.
-     Six or seven steps — this is the trace you wrote in Milestone 1. -->
+<!-- DRAFT - edit me into your own words. -->
 
+1. A client POSTs `{text, creator_id}` to `/submit`.
+2. `app.py` validates it. Missing, blank or oversized input gets a 4xx JSON error and a logged rejection.
+3. `detector.py` (gpt2) reads the text and returns `model_score`, based on how predictable the text is.
+4. `stylometry.py` measures the shape of the text and returns `style_score`.
+5. `scoring.py::combine_signals` merges the two into `combined_score`.
+6. `scoring.py::score_to_label` turns that score into a guess and a plain-language label.
+7. `audit.py` appends a line to `logs/audit.jsonl` with all three scores and the status, and the response goes back to the writer. If they disagree, `/appeal` records their reasoning and sets the status to `under_review`.
 
 
 ---
@@ -53,28 +59,28 @@
 
 ### Signal one — the model signal
 
-**What it measures:**
+**What it measures:** How predictable the text is to gpt2 (perplexity), turned into a 0–1 score where higher means more AI-like.
 
-**Why that might differ between human and AI writing:**
+**Why that might differ between human and AI writing:** Generated text picks likely next words, so a language model finds it easy to predict. Human writing surprises it more.
 
-**What it can't see:**
+**What it can't see:** Why the text is predictable. Formal or plain human writing also scores as AI-like, lightly edited AI doesn't, and very short text is noisy.
 
 ### Signal two — the style signal
 
-**What it measures:**
+**What it measures:** The shape of the text: how much sentence length varies, the ratio of unique words, and how much of the less common punctuation (`; : — ( ) " ! ?`) it uses.
 
-**Why that might differ between human and AI writing:**
+**Why that might differ between human and AI writing:** Generated prose tends toward even sentences and steady vocabulary. Human writing is lumpier.
 
-**What it can't see:**
+**What it can't see:** Meaning. Anyone can change the shape on purpose (break up sentences, add dashes or typos). Terse or technical human writing looks uniform, and the unique-word ratio shifts with text length.
 
 ### The combining rule
 
 <!-- Write the rule in words, then give the numbers. What happens when the two
      signals disagree? -->
 
-**The rule:**
+**The rule:** An equal-weight average of the two scores. If the signals differ by more than 0.6, the result is pulled halfway back toward 0.5, so one signal on its own can't produce a confident label.
 
-**The numbers:**
+**The numbers:** Weights 0.5 / 0.5, disagreement gap 0.6, shrink 0.5, human threshold 0.35, AI threshold 0.65 (all in `config.py`). I first tried 0.6 / 0.4 with a gap of 0.4, but clearly human text then landed in "unsure" and the human label was unreachable.
 
 **Where it lives:** `scoring.py::combine_signals`
 
@@ -83,6 +89,16 @@
 
 **A case where my two signals split, and what my rule does with it:**
 
+My own casual Monday-morning paragraph: the model signal said 0.557 (leaning AI) while the style signal said 0.000 (very human). The gap of 0.557 is under 0.6, so the plain average applies: 0.278, which is the human label. The trade-off: a lower gap would have made this "unsure", but it would also have blocked the human label on text like this. On a formal human paragraph the signals agreed more (0.713 vs 0.442), giving 0.578, which is "unsure" and not a false accusation.
+
+| Input | model | style | combined | label |
+|---|---|---|---|---|
+| clearly AI | 0.850 | 0.628 | 0.739 | ai |
+| clearly human | 0.557 | 0.000 | 0.278 | human |
+| formal human | 0.713 | 0.442 | 0.578 | unsure |
+| lightly edited AI | 0.524 | 0.484 | 0.504 | unsure |
+
+The last row is a miss: edited AI gets through as "unsure". That is a known cost of keeping false accusations low.
 
 
 ---
@@ -96,15 +112,14 @@
 
 | Label | Score range | The exact text a reader sees |
 |---|---|---|
-| high-confidence human |  |  |
-| unsure |  |  |
-| high-confidence AI |  |  |
+| high-confidence human | 0.00 – 0.35 | We think this was probably written by a person. |
+| unsure | 0.35 – 0.65 | We couldn't tell either way. Nothing here suggests a problem, and no action is needed. |
+| high-confidence AI | 0.65 – 1.00 | This looks like it may have been written with the help of an AI tool. Our check can be wrong, so if you wrote it yourself, you can ask for a review. |
 
 **Why I worded the "unsure" one this way:**
-<!-- It's the hardest of the three. It has to admit uncertainty without
-     sounding like an accusation, because the person reading it may well have
-     written every word themselves. -->
+<!-- DRAFT - edit me. Run the "answer as the writer" prompt on all three first. -->
 
+It says plainly that the system doesn't know, and tells the writer there is nothing to do. Most people who see it wrote every word themselves, so it avoids the word "AI" entirely.
 
 
 ---
@@ -124,11 +139,20 @@
 ```bash
 $ curl -X POST http://127.0.0.1:5000/submit \
   -H "Content-Type: application/json" \
-  -d '{"text": "...", "creator_id": "..."}'
+  -d '{"creator_id": "w3", "text": "Artificial intelligence is a transformative technology that offers numerous benefits across many industries. It enables organizations to improve efficiency, enhance decision-making, and drive innovation. Furthermore, it provides valuable insights that support strategic planning. Moreover, it helps teams to streamline workflows and reduce operational costs. In conclusion, artificial intelligence represents a significant opportunity for organizations of all sizes."}'
 ```
 
 ```json
-
+{
+  "combined_score": 0.7389,
+  "confidence": 0.4778,
+  "content_id": "d888b763248246858bf8b05cc9359919",
+  "guess": "ai",
+  "label": "This looks like it may have been written with the help of an AI tool. Our check can be wrong, so if you wrote it yourself, you can ask for a review.",
+  "model_score": 0.8498,
+  "status": "decided",
+  "style_score": 0.6279
+}
 ```
 
 **An appeal**
@@ -136,21 +160,47 @@ $ curl -X POST http://127.0.0.1:5000/submit \
 ```bash
 $ curl -X POST http://127.0.0.1:5000/appeal \
   -H "Content-Type: application/json" \
-  -d '{"content_id": "...", "reasoning": "..."}'
+  -d '{"content_id": "d888b763248246858bf8b05cc9359919", "reasoning": "I wrote this myself for a class; I tend to write in a formal style."}'
 ```
 
 ```json
-
+{
+  "content_id": "d888b763248246858bf8b05cc9359919",
+  "message": "Thanks. Your appeal has been recorded and this item is now under review.",
+  "status": "under_review"
+}
 ```
 
 **What the log shows afterwards**
 
+Entries for that content_id, from `GET /log`:
+
 ```bash
-$ curl "http://127.0.0.1:5000/log?limit=3"
+$ curl "http://127.0.0.1:5000/log"
 ```
 
 ```json
-
+[
+  {
+    "combined_score": 0.7389,
+    "content_id": "d888b763248246858bf8b05cc9359919",
+    "creator_id": "w3",
+    "guess": "ai",
+    "label": "This looks like it may have been written with the help of an AI tool. Our check can be wrong, so if you wrote it yourself, you can ask for a review.",
+    "model_score": 0.8498,
+    "status": "decided",
+    "style_score": 0.6279,
+    "timestamp": "2026-11-05T00:34:36+00:00"
+  },
+  {
+    "content_id": "d888b763248246858bf8b05cc9359919",
+    "creator_id": "w3",
+    "event": "appeal",
+    "reasoning": "I wrote this myself for a class; I tend to write in a formal style.",
+    "status": "under_review",
+    "timestamp": "2026-11-05T00:35:01+00:00"
+  }
+]
 ```
 
 ---
