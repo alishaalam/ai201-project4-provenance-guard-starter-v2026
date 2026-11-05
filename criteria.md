@@ -42,62 +42,47 @@ Two things worth knowing before you pick numbers:
   a **miss**.
 
 ---
-## 1.
+## 1. False positives: DRAFT - edit me
 
-<!-- Your criterion. It must name a number. -->
+Of 10 pieces of writing I wrote myself, at most 1 is labelled high-confidence AI, in each of three trials.
 
-
-
-**Why this target:**
-
+**Why this target:** A wrong accusation costs a real writer far more than a missed detection costs the site. One in ten is still not comfortable. Say it out loud to someone who would be that one.
 
 
 ---
 
-## 2.
+## 2. Score spread: DRAFT - edit me
 
-<!-- Your criterion. -->
+The mean combined score of 5 clearly-AI pieces is at least 0.30 higher than the mean of 5 clearly-human pieces.
 
-
-
-**Why this target:**
-
+**Why this target:** If the two groups sit closer than 0.30, the thresholds at 0.35 and 0.65 can't separate them. The model signal alone is noisy, so I want room to spare.
 
 
 ---
 
-## 3.
+## 3. Label coverage: DRAFT - edit me
 
-<!-- Your criterion. -->
+Across 10 test submissions I can produce each of the three labels (human, unsure, AI) at least once, and text I judge borderline lands in the unsure band (0.35–0.65) in at least 3 of 5 cases.
 
-
-
-**Why this target:**
-
+**Why this target:** A label that can't be reached is a gap in the ranges. The unsure band is where the system admits it doesn't know, so it has to actually catch uncertain text.
 
 
 ---
 
-## 4.
+## 4. The appeal path: DRAFT - edit me
 
-<!-- Your criterion. -->
+In 5 of 5 appeals on real content_ids, the response says `under_review`, and `GET /log` shows an appeal entry for that content_id with the writer's reasoning. An unknown content_id returns 404 and writes no appeal.
 
-
-
-**Why this target:**
-
+**Why this target:** An appeal that sometimes vanishes is worse than no appeal. It has to be 5 of 5.
 
 
 ---
 
-## 5.
+## 5. Bad input: DRAFT - edit me
 
-<!-- Your criterion. -->
+For 6 bad inputs (missing text, empty text, whitespace only, 25,000 characters, 2 words, missing creator_id), 6 of 6 return a 4xx JSON error with an `error` field, and none returns a 500 or crashes the service.
 
-
-
-**Why this target:**
-
+**Why this target:** A service that throws a stack trace on bad input is easy to break, and unit 8 attacks start here.
 
 
 ---
