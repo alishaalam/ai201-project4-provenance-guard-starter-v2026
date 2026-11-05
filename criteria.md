@@ -42,16 +42,16 @@ Two things worth knowing before you pick numbers:
   a **miss**.
 
 ---
-## 1. False positives: DRAFT - edit me
+## 1. False positives
 
 Of 10 pieces of writing I wrote myself, at most 1 is labelled high-confidence AI, in each of three trials.
 
-**Why this target:** A wrong accusation costs a real writer far more than a missed detection costs the site. One in ten is still not comfortable. Say it out loud to someone who would be that one.
+**Why this target:** A wrong accusation costs a real writer far more than a missed detection costs the site. I accept up to one in ten because the unsure band absorbs most borderline writing, and a flagged writer can appeal. I won't accept more, because each extra case is a person wrongly accused.
 
 
 ---
 
-## 2. Score spread: DRAFT - edit me
+## 2. Score spread
 
 The mean combined score of 5 clearly-AI pieces is at least 0.30 higher than the mean of 5 clearly-human pieces.
 
@@ -60,7 +60,7 @@ The mean combined score of 5 clearly-AI pieces is at least 0.30 higher than the 
 
 ---
 
-## 3. Label coverage: DRAFT - edit me
+## 3. Label coverage
 
 Across 10 test submissions I can produce each of the three labels (human, unsure, AI) at least once, and text I judge borderline lands in the unsure band (0.35–0.65) in at least 3 of 5 cases.
 
@@ -69,7 +69,7 @@ Across 10 test submissions I can produce each of the three labels (human, unsure
 
 ---
 
-## 4. The appeal path: DRAFT - edit me
+## 4. The appeal path
 
 In 5 of 5 appeals on real content_ids, the response says `under_review`, and `GET /log` shows an appeal entry for that content_id with the writer's reasoning. An unknown content_id returns 404 and writes no appeal.
 
@@ -78,7 +78,7 @@ In 5 of 5 appeals on real content_ids, the response says `under_review`, and `GE
 
 ---
 
-## 5. Bad input: DRAFT - edit me
+## 5. Bad input
 
 For 6 bad inputs (missing text, empty text, whitespace only, 25,000 characters, 2 words, missing creator_id), 6 of 6 return a 4xx JSON error with an `error` field, and none returns a 500 or crashes the service.
 

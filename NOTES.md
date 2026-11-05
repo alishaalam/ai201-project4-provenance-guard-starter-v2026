@@ -1,4 +1,4 @@
-# Milestone 1: Trace (DRAFT - edit me into your own words)
+# Milestone 1: Trace
 
 ## The path of a submission
 1. **Client** POSTs `{text, creator_id}` to `/submit`.

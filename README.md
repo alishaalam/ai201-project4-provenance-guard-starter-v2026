@@ -36,8 +36,6 @@
 
 ## What This Does
 
-<!-- DRAFT - edit me into your own words. -->
-
 1. A client POSTs `{text, creator_id}` to `/submit`.
 2. `app.py` validates it. Missing, blank or oversized input gets a 4xx JSON error and a logged rejection.
 3. `detector.py` (gpt2) reads the text and returns `model_score`, based on how predictable the text is.
@@ -117,8 +115,6 @@ The last row is a miss: edited AI gets through as "unsure". That is a known cost
 | high-confidence AI | 0.65 – 1.00 | This looks like it may have been written with the help of an AI tool. Our check can be wrong, so if you wrote it yourself, you can ask for a review. |
 
 **Why I worded the "unsure" one this way:**
-<!-- DRAFT - edit me. Run the "answer as the writer" prompt on all three first. -->
-
 It says plainly that the system doesn't know, and tells the writer there is nothing to do. Most people who see it wrote every word themselves, so it avoids the word "AI" entirely.
 
 
