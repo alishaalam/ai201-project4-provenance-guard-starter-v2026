@@ -61,6 +61,13 @@ MAX_TEXT_CHARS = 20000
 WEIGHT_MODEL_SIGNAL = 0.5
 WEIGHT_STYLE_SIGNAL = 0.5
 
+# When the two signals differ by more than DISAGREEMENT_GAP, the weighted
+# average is pulled toward 0.5 by DISAGREEMENT_SHRINK (0 = no pull, 1 = all the
+# way to 0.5). Two methods disagreeing is uncertainty, so one signal alone can't
+# push a piece into either confident label.
+DISAGREEMENT_GAP = 0.6
+DISAGREEMENT_SHRINK = 0.5
+
 
 # ─── Thresholds (Milestone 5) ────────────────────────────────────────────────
 # Where one label becomes another. Scores run 0.0 (confidently human) to 1.0

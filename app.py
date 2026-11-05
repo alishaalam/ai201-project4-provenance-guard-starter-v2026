@@ -31,6 +31,8 @@ from flask import Flask, jsonify, request
 import audit
 import config
 import detector
+import scoring
+import stylometry
 
 app = Flask(__name__)
 
@@ -229,16 +231,21 @@ def submit():
     except detector.DetectorUnavailable as exc:
         return _reject(creator_id, "detector_unavailable", str(exc), 503)
 
-    # Milestone 3: confidence and label are still placeholders.
+    style_score = stylometry.style_signal(text)
+    combined_score = scoring.combine_signals(model_score, style_score)
+    guess, label = scoring.score_to_label(combined_score)
+    # Confidence = distance from the middle, rescaled to 0-1. It is low in the
+    # unsure band and high at either extreme.
+    confidence = round(abs(combined_score - 0.5) * 2, 4)
+
     content_id = uuid.uuid4().hex
-    guess = "unsure"
-    confidence = 0.0
-    label = "PLACEHOLDER"
     audit.log_decision(
         content_id=content_id,
         creator_id=creator_id,
         guess=guess,
         model_score=model_score,
+        style_score=style_score,
+        combined_score=combined_score,
         label=label,
     )
     return jsonify({
@@ -247,6 +254,8 @@ def submit():
         "confidence": confidence,
         "label": label,
         "model_score": model_score,
+        "style_score": style_score,
+        "combined_score": combined_score,
         "status": "decided",
     })
 

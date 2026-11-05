@@ -64,8 +64,15 @@ def sentence_length_spread(text: str) -> float:
     `stdev` raises on fewer than two values. Decide what that should return
     before the attack set decides for you.
     """
-    # TODO: replace this
-    return 0.0
+    lengths = [len(words(s)) for s in sentences(text)]
+    if len(lengths) < 2:
+        return 0.0  # no spread to measure; style_signal treats this as neutral
+    mean = statistics.mean(lengths)
+    if mean == 0:
+        return 0.0
+    # Coefficient of variation. Higher = lumpier = more human. Typical human
+    # prose runs ~0.5-0.8, generated prose ~0.2-0.4.
+    return round(statistics.stdev(lengths) / mean, 4)
 
 
 def type_token_ratio(text: str) -> float:
@@ -80,8 +87,10 @@ def type_token_ratio(text: str) -> float:
     directly comparable on it, and if your test inputs vary a lot in length,
     that alone can look like a signal.
     """
-    # TODO: replace this
-    return 0.0
+    w = words(text)
+    if not w:
+        return 0.0
+    return round(len(set(w)) / len(w), 4)
 
 
 def punctuation_density(text: str) -> float:
@@ -94,8 +103,14 @@ def punctuation_density(text: str) -> float:
         more interesting than full stops, because they vary more between
         writers.
     """
-    # TODO: replace this
-    return 0.0
+    w = words(text)
+    if not w:
+        return 0.0
+    # Only the marks writers choose: ; : dashes, parentheses, quotes, ! ?
+    # Commas and full stops are near-constant across writers. Higher = more
+    # human. Returned per word so length doesn't matter.
+    marks = re.findall(r"[;:()\"!?\u2014\u2013]|\s-\s|--", text)
+    return round(len(marks) / len(w), 4)
 
 
 # ── Combining them ───────────────────────────────────────────────────────────
@@ -122,8 +137,22 @@ def style_signal(text: str) -> float:
     you trust it. Plain and ordinary, not formal: formal prose reads as *human*
     to signal one, and it is plain writing that gets accused.
     """
-    # TODO: replace this
-    return 0.5
+    def clamp(x):
+        return max(0.0, min(1.0, x))
+
+    # Each component is 0-1 with higher = more AI-like.
+    # Spread is "more human" when high, so it is flipped. One sentence has no
+    # spread to read, so that component is neutral.
+    if len(sentences(text)) < 2:
+        spread_ai = 0.5
+    else:
+        spread_ai = clamp(1 - sentence_length_spread(text) / 0.8)
+    # TTR: 0.8+ reads human, 0.4 or less reads AI.
+    ttr_ai = clamp((0.8 - type_token_ratio(text)) / 0.4)
+    # Punctuation: 0.08 marks per word or more reads human, none reads AI.
+    punct_ai = clamp(1 - punctuation_density(text) / 0.08)
+
+    return round(0.4 * spread_ai + 0.3 * ttr_ai + 0.3 * punct_ai, 4)
 
 
 if __name__ == "__main__":
