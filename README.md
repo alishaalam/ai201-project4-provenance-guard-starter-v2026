@@ -209,15 +209,15 @@ $ curl "http://127.0.0.1:5000/log"
 
 **Moment 1**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* Claude Code planned and built the whole pipeline from the milestone brief, including the second signal in `stylometry.py` and the combining rule in `scoring.py::combine_signals`.
+- *What came back:* Three style measures (sentence-length spread, unique-word ratio, rare-punctuation density) and a rule with 0.6 / 0.4 weights and a disagreement gap of 0.4 that pulls the score toward 0.5.
+- *What I changed:* The four-input test showed clearly human text landing in "unsure", so the human label was unreachable. We moved to 0.5 / 0.5 weights and a gap of 0.6, and the same text became "human". The weights rest on four texts, so I'm treating them as a starting point for unit 8.
 
 **Moment 2**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* A decision on what `/submit` and `/appeal` do with bad input, and what `confidence` means.
+- *What came back:* Specific status codes (400, 413, 422, 503, 404), each logged as a rejection, and `confidence` defined as distance from 0.5 rescaled to 0–1.
+- *What I changed:* I chose the `confidence` definition from three options Claude offered. I also asked for drafts of the criteria and labels, and I'm rewriting those drafts in my own words, because the brief says to own them.
 
 <!-- ═══════════════════════ UNIT 8 — THE TEST ═══════════════════════ -->
 
